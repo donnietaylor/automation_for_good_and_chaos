@@ -16,31 +16,28 @@ This is a "good" automation example that demonstrates how AI can help maintain c
 
 ## Prerequisites
 
-- Python 3.9+
+- PowerShell 7+ (or Windows PowerShell 5.1)
 - OpenAI API key
 
 ## Installation
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
+```powershell
 # Set up environment variables
-cp .env.example .env
+Copy-Item .env.example .env
 # Edit .env and add your OPENAI_API_KEY
 ```
 
 ## Usage
 
-```bash
+```powershell
 # Format a single file
-python formatter.py path/to/file.py
+.\formatter.ps1 -Path path\to\file.py
 
 # Format all files in a directory
-python formatter.py path/to/directory --recursive
+.\formatter.ps1 -Path path\to\directory -Recursive
 
 # Dry run (preview changes without applying)
-python formatter.py path/to/file.py --dry-run
+.\formatter.ps1 -Path path\to\file.py -DryRun
 ```
 
 ## How It Works
@@ -86,22 +83,21 @@ OPENAI_MODEL=gpt-4  # or gpt-3.5-turbo for lower cost
 
 - Creates backup before modifying
 - Requires confirmation for changes
-- Validates syntax before applying
 - Dry-run mode available
 
 ## Demo Script
 
 For presentations:
 
-```bash
+```powershell
 # Show messy code
-cat example_messy.py
+Get-Content example_messy.py
 
 # Run formatter
-python formatter.py example_messy.py
+.\formatter.ps1 -Path example_messy.py
 
 # Show formatted result
-cat example_messy.py
+Get-Content example_messy.py
 ```
 
 ## Limitations
