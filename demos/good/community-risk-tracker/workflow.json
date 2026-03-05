@@ -1,0 +1,373 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "fffedf2b-463a-4785-880f-ab249c8abbae",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        6752,
+        2928
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.weather.gov/alerts/active?area=TX",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "n8n-community-risk-radar-mmsmoa"
+            },
+            {
+              "name": "Accept",
+              "value": "application/geo+json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d664e09a-be34-43a2-90ae-afbdbc89e0a1",
+      "name": "Fetch NWS Alerts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        7008,
+        2368
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson",
+        "options": {}
+      },
+      "id": "acc1aa25-8738-44d1-ae22-66b3edde5cd0",
+      "name": "Fetch USGS Earthquakes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        7008,
+        2592
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_Current/FeatureServer/0/query?where=1%3D1&outFields=IncidentName,POOState,FireDiscoveryDateTime,DailyAcres,PercentContained,IncidentTypeCategory,POOCounty,ModifiedOnDateTime&orderByFields=DailyAcres+DESC&resultRecordCount=50&f=geojson",
+        "options": {}
+      },
+      "id": "9f925909-4f90-423f-b544-b2a898eeda72",
+      "name": "Fetch Active Wildfires",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        7008,
+        2816
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.fema.gov/api/open/v2/disasterDeclarationsSummaries?$filter=declarationDate%20gt%20'2025-01-01'&$orderby=declarationDate%20desc&$top=50&$format=json",
+        "options": {}
+      },
+      "id": "d864c8b5-5d03-46a0-b14e-557f783f852a",
+      "name": "Fetch FEMA Declarations",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        7008,
+        3040
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://www.spc.noaa.gov/products/outlook/day1otlk_cat.nolyr.geojson",
+        "options": {}
+      },
+      "id": "9dcb8bf9-6b93-4def-9d1d-6b3b6eeba1b1",
+      "name": "Fetch SPC Outlook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        7008,
+        3264
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://www.airnowapi.org/aq/observation/zipCode/current/?format=application/json&zipCode=75001&distance=200&API_KEY=YOUR_AIRNOW_KEY_HERE",
+        "options": {}
+      },
+      "id": "95e4e730-da1e-4a44-9cf5-0f909a656307",
+      "name": "Fetch AirNow AQI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        7008,
+        3488
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://waterservices.usgs.gov/nwis/iv/?format=json&stateCd=tx&parameterCd=00065&siteStatus=active&siteType=ST",
+        "options": {}
+      },
+      "id": "22781b4f-b975-48ef-8a42-19e3db4b7ed7",
+      "name": "Fetch USGS Stream Gauges",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        7008,
+        3712
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "numberInputs": 7
+      },
+      "id": "e4d4cc0c-6c53-4cf4-a374-f13c0a4f94b3",
+      "name": "Merge All Sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        7280,
+        2960
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Edit LOCAL_STATES to change the monitored region\nconst LOCAL_STATES = ['Texas','TX','Oklahoma','OK','Louisiana','LA','New Mexico','NM','Arkansas','AR'];\nconst isLocal = t => t && LOCAL_STATES.some(s => t.includes(s));\n\n// Fingerprint each response by its unique shape\nlet weatherRaw, quakeRaw, fireRaw, femaRaw, spcRaw, airRaw, gaugeRaw;\nfor (const item of $input.all()) {\n  const j = item.json;\n  if (j['@context'] && j.features)                                        weatherRaw = j;\n  else if (j.features && j.metadata?.url?.includes('usgs'))               quakeRaw   = j;\n  else if (j.features && j.features[0]?.properties?.LABEL !== undefined)  spcRaw     = j;\n  else if (j.features)                                                     fireRaw    = j;\n  else if (j.DisasterDeclarationsSummaries !== undefined)                  femaRaw    = j;\n  else if (Array.isArray(j) || Array.isArray(item.json[0]?.AQI !== undefined ? j : null)) airRaw = Array.isArray(j) ? j : null;\n  else if (j.value?.timeSeries !== undefined)                              gaugeRaw   = j;\n}\n// AirNow returns a top-level array — handle that case\nif (!airRaw) {\n  for (const item of $input.all()) {\n    if (Array.isArray(item.json) && item.json[0]?.AQI !== undefined) { airRaw = item.json; break; }\n  }\n}\n\n// ── WEATHER (NWS — already TX-scoped) ────────────────────────────\nconst weather = (weatherRaw?.features ?? []).map(f => ({\n  event: f.properties?.event, severity: f.properties?.severity,\n  urgency: f.properties?.urgency, area: f.properties?.areaDesc,\n  headline: f.properties?.headline, expires: f.properties?.expires\n}));\n\n// ── EARTHQUAKES (USGS — filter to local) ─────────────────────────\nconst quakes = (quakeRaw?.features ?? [])\n  .map(f => ({\n    magnitude: f.properties?.mag, place: f.properties?.place,\n    time: f.properties?.time ? new Date(f.properties.time).toISOString() : null,\n    tsunami: f.properties?.tsunami === 1, alert: f.properties?.alert,\n    depth_km: f.geometry?.coordinates?.[2]\n  }))\n  .filter(q => isLocal(q.place));\n\n// ── WILDFIRES (NIFC — filter to local) ───────────────────────────\nconst fires = (fireRaw?.features ?? [])\n  .map(f => ({\n    name: f.properties?.IncidentName, state: f.properties?.POOState,\n    county: f.properties?.POOCounty, acres: f.properties?.DailyAcres,\n    percentContained: f.properties?.PercentContained\n  }))\n  .filter(f => isLocal(f.state));\n\n// ── FEMA (filter to local) ────────────────────────────────────────\nconst fema = (femaRaw?.DisasterDeclarationsSummaries ?? [])\n  .filter(d => isLocal(d.state))\n  .map(d => ({\n    id: d.disasterNumber, title: d.declarationTitle,\n    state: d.state, type: d.incidentType, declared: d.declarationDate\n  }));\n\n// ── SPC OUTLOOK (keep only elevated+ risk categories) ────────────\nconst SPC_ELEVATED = ['TSTM','MRGL','SLGT','ENH','MDT','HIGH'];\nconst spc = (spcRaw?.features ?? [])\n  .filter(f => SPC_ELEVATED.includes(f.properties?.LABEL))\n  .map(f => ({\n    category: f.properties?.LABEL,\n    categoryName: f.properties?.LABEL2,\n    fill: f.properties?.fill\n  }));\n\n// ── AIRNOW AQI (keep only Unhealthy for Sensitive+ readings) ─────\nconst aqi = (airRaw ?? [])\n  .filter(r => (r.AQI ?? 0) >= 101)\n  .map(r => ({\n    area: r.ReportingArea, state: r.StateCode,\n    aqi: r.AQI, category: r.Category?.Name,\n    pollutant: r.ParameterName\n  }));\n\n// ── USGS STREAM GAUGES (above flood stage = stage > 0 action) ────\n// The IV service returns timeSeries array; each has siteCode + values\nconst gauges = (gaugeRaw?.value?.timeSeries ?? [])\n  .map(ts => ({\n    site: ts.sourceInfo?.siteName,\n    siteCode: ts.sourceInfo?.siteCode?.[0]?.value,\n    latestStage_ft: parseFloat(ts.values?.[0]?.value?.[0]?.value ?? 'NaN'),\n    dateTime: ts.values?.[0]?.value?.[0]?.dateTime ?? null\n  }))\n  .filter(g => !isNaN(g.latestStage_ft) && g.latestStage_ft > 15);\n// Note: 15 ft is a rough proxy — real flood stage varies per gauge.\n// For production, cross-reference USGS flood-stage thresholds per site.\n\nreturn [{ json: { generatedAt: new Date().toISOString(), weather, quakes, fires, fema, spcOutlook: spc, airQuality: aqi, streamGauges: gauges } }];"
+      },
+      "id": "b2190ed0-34d1-43dd-aeea-f069b77fe092",
+      "name": "Filter + Extract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7552,
+        2960
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-5.1",
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are an emergency management analyst writing public-facing community risk briefings for the Texas region and neighboring states. You will receive structured JSON with up to 7 data sources: NWS weather alerts, USGS earthquakes, active wildfires, FEMA declarations, SPC severe weather outlook categories, AirNow air quality readings, and USGS stream gauge levels. Write a concise plain-English briefing of 3-5 sentences covering what is happening and what residents should know or do. Prioritize life-safety hazards. Do not mention events outside the local region. Do not speculate beyond the data. If all arrays are empty or there is nothing significant, say so reassuringly. End your response with a single line in this exact format — Risk Level: HIGH, MODERATE, LOW, or NONE."
+            },
+            {
+              "content": "={{ JSON.stringify($json, null, 2) }}"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "8895ea1e-846d-4f57-aeac-d9d69e78c96c",
+      "name": "OpenAI Risk Briefing",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        7808,
+        2960
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "P3sjvOYvGpuy8TyT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "generatedAt",
+              "stringValue": "={{ $('Filter + Extract').first().json.generatedAt }}"
+            },
+            {
+              "name": "aiSummary",
+              "stringValue": "={{ $json.message.content }}"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "70e11747-ac2b-477e-a88d-460457b9625b",
+      "name": "Risk Report Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        8064,
+        2960
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch NWS Alerts",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch USGS Earthquakes",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Active Wildfires",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch FEMA Declarations",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch SPC Outlook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch AirNow AQI",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch USGS Stream Gauges",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch NWS Alerts": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch USGS Earthquakes": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Fetch Active Wildfires": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Fetch FEMA Declarations": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Fetch SPC Outlook": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Fetch AirNow AQI": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Fetch USGS Stream Gauges": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 6
+          }
+        ]
+      ]
+    },
+    "Merge All Sources": {
+      "main": [
+        [
+          {
+            "node": "Filter + Extract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter + Extract": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Risk Briefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Risk Briefing": {
+      "main": [
+        [
+          {
+            "node": "Risk Report Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "96abc2368f3dd85ab69fb2c62525c3e4052a5ad9d1f964111a7d0f10c7053371"
+  }
+}
