@@ -1,6 +1,6 @@
 # Presentation Materials
 
-This directory contains slide decks, speaker notes, and presentation resources for **"Automation for Good… and Evil"** talks.
+This directory contains slide decks, speaker notes, and presentation resources for **"Automation for Good… and Chaos"** talks.
 
 ## Session Overview
 

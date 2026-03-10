@@ -1,6 +1,6 @@
 # Azure Automations
 
-This directory contains examples of Azure-based automation solutions used in the "Automation for Good and Evil" presentation.
+This directory contains examples of Azure-based automation solutions used in the "Automation for Good and Chaos" presentation.
 
 ## Azure Services Covered
 

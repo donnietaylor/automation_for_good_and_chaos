@@ -1,6 +1,6 @@
 # Demo Examples
 
-This directory contains ready-to-run demonstration code for the "Automation for Good… and Evil" session.
+This directory contains ready-to-run demonstration code for the "Automation for Good… and Chaos" session.
 
 ## Philosophy
 

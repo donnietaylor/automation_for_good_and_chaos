@@ -1,4 +1,4 @@
-# Automation for Good… and Evil
+# Automation for Good… and Chaos
 
 A repository showcasing real-time automation and AI-driven workflows that can genuinely help communities, nonprofits, and civic efforts—or power playful, harmless mischief when the moment is right.
 

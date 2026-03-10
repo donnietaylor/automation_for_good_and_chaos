@@ -1,6 +1,6 @@
 # Azure Automations Guide
 
-Complete guide to implementing Azure-based automations for the "Automation for Good and Evil" presentation.
+Complete guide to implementing Azure-based automations for the "Automation for Good and Chaos" presentation.
 
 ## Azure Services Overview
 

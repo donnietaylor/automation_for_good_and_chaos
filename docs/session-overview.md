@@ -1,4 +1,4 @@
-# Automation for Good… and Evil - Session Overview
+# Automation for Good… and Chaos - Session Overview
 
 ## Session Description
 

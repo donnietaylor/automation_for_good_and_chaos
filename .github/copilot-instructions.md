@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This repository, "Automation for Good and Evil," showcases Azure and AI-based automations through humorous demonstrations. It contains code examples, demos, and presentation materials demonstrating how automation can be used for both beneficial ("good") and satirical ("evil") purposes.
+This repository, "Automation for Good and Chaos," showcases Azure and AI-based automations through humorous demonstrations. It contains code examples, demos, and presentation materials demonstrating how automation can be used for both beneficial ("good") and satirical ("chaos") purposes.
 
 ## Code Style and Standards
 
