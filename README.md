@@ -49,7 +49,7 @@ This repository demonstrates how to build systems that react in real time to peo
 - **Community resource matching** connecting people with local services
 - **Automated code reviews** that genuinely improve project quality
 
-### "Evil" Automations (Playful Chaos)
+### Chaos Automations 
 - **Over-enthusiastic bots** that respond to EVERYTHING with too much excitement
 - **Meeting chaos generators** (for harmless demo purposes!)
 - **Emoji overload systems** that transform serious text into chaos
