@@ -44,28 +44,28 @@ We demonstrate helpful automations first to show genuine community impact, then 
 ### 2. "Evil" Examples (Playful Chaos - Harmless Mischief!)
 
 #### Real-Time Emoji Bomber
-- **Location**: `./evil/emoji-chaos-bot/`
+- **Location**: `./chaos/emoji-chaos-bot/`
 - **Description**: Monitors messages and adds excessive emojis in real time
 - **Tech**: Webhook listeners, text transformation
 - **Use Case**: Demonstrating over-automation and context ignorance
 - **Run Time**: 3 minutes
 
 #### Meeting Time Chaos Generator
-- **Location**: `./evil/meeting-chaos/`
+- **Location**: `./chaos/meeting-chaos/`
 - **Description**: Suggests hilariously inconvenient meeting times
 - **Tech**: Calendar APIs, "creative" scheduling logic
 - **Use Case**: Showing what happens when automation lacks empathy
 - **Run Time**: 4 minutes
 
 #### Overly Helpful Assistant
-- **Location**: `./evil/over-helper/`
+- **Location**: `./chaos/over-helper/`
 - **Description**: Responds to every message with excessive helpfulness
 - **Tech**: Webhook triggers, OpenAI API with chaotic prompts
 - **Use Case**: Teaching about automation boundaries and user experience
 - **Run Time**: 3 minutes
 
 #### Format Wars Bot
-- **Location**: `./evil/format-wars/`
+- **Location**: `./chaos/format-wars/`
 - **Description**: Randomly switches code formatting styles on every save
 - **Tech**: File watchers, real-time code modification
 - **Use Case**: Highlighting the importance of consistent standards

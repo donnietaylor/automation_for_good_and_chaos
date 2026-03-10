@@ -4,7 +4,7 @@ A repository showcasing real-time automation and AI-driven workflows that can ge
 
 ## Purpose
 
-**Automation isn't inherently good or evil. It's just power, and what matters is how we choose to use it.**
+**Automation isn't inherently good or bad. It's just power, and what matters is how we choose to use it.**
 
 This repository demonstrates how to build systems that react in real time to people, events, and environmental signals. You'll see how the same automation patterns can make a real difference for communities or enable clever, well-timed shenanigans.
 
