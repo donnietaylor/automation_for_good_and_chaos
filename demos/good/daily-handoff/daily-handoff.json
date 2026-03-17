@@ -1,0 +1,916 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            },
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1072,
+        272
+      ],
+      "id": "95a420c6-8470-426a-8f11-1ba1476d4f2c",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "resource": "user",
+        "owner": {
+          "__rl": true,
+          "value": "donnietaylor",
+          "mode": "list",
+          "cachedResultName": "donnietaylor",
+          "cachedResultUrl": "https://github.com/donnietaylor"
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        -416,
+        -16
+      ],
+      "id": "831874c5-b455-4b07-b710-abf609595356",
+      "name": "Get a user's repositories",
+      "webhookId": "517fcf5b-ccf0-47cf-a793-e9f4df1c20ed",
+      "credentials": {
+        "githubApi": {
+          "id": "BQxr3ZfT8eSEGQcU",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "repository",
+        "operation": "getPullRequests",
+        "owner": {
+          "__rl": true,
+          "value": "donnietaylor",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "={{ $('Get a user\\'s repositories').item.json.name }}",
+          "mode": "name"
+        },
+        "getRepositoryPullRequestsFilters": {}
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        32,
+        80
+      ],
+      "id": "23d70c81-c2c7-4d92-92b7-b6ac80367ee9",
+      "name": "Get pull requests of a repository",
+      "webhookId": "8f4439b8-f612-4c15-80cc-eea46562b08d",
+      "credentials": {
+        "githubApi": {
+          "id": "BQxr3ZfT8eSEGQcU",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "524b2a32-a10b-41e1-8b2e-999b728413a0",
+              "leftValue": "={{ $json.has_issues }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "6f8a6508-eda2-4ffe-907f-1939cbf08c36",
+              "leftValue": "={{ $json.open_issues }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -192,
+        -112
+      ],
+      "id": "7fa2cc3e-f038-4c75-86bb-867652adff6c",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "repository",
+        "owner": {
+          "__rl": true,
+          "value": "donnietaylor",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "={{ $json.name }}",
+          "mode": "name"
+        },
+        "getRepositoryIssuesFilters": {}
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        32,
+        -112
+      ],
+      "id": "140b7f03-7faa-47ed-86a7-55fd687103e8",
+      "name": "Get issues of a repository",
+      "webhookId": "9e4d9fe7-09b0-4ddd-9e8d-5d9a6a085928",
+      "credentials": {
+        "githubApi": {
+          "id": "BQxr3ZfT8eSEGQcU",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "filtersUI": {
+          "values": {
+            "filters": {
+              "receivedAfter": "={{ $json.Past8Hours }}"
+            }
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        32,
+        464
+      ],
+      "id": "febec5cb-672d-4e59-a9ed-07c3e51d8645",
+      "name": "Get many messages",
+      "webhookId": "17fa9cf7-bf31-4b29-9d6c-15cba8813a39",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "jzFDALdvNHOxXcJs",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1008,
+        400
+      ],
+      "id": "dd231806-7cc2-4688-bc33-371a5f9fba99",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "P3sjvOYvGpuy8TyT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "summarizationMethodAndPrompts": {
+            "values": {
+              "summarizationMethod": "stuff",
+              "prompt": "=You are my daily assistant.\n\nYou are given raw JSON data describing GitHub issues/PRs, emails, calendar events, and items from the Azure RSS feed:\n\n{text}\n\nFrom ALL of this, pick only the most important things I should focus on today.\n\nRules:\n- DO NOT invent any issue numbers, PR numbers, dates, times, or names that are not present in the JSON.\n- If something is missing (like an ID or time), write \"unspecified\" instead of guessing.\n- Prefer urgency, blockers, deadlines, and anything that needs my action.\n- Ignore low-signal or repetitive items.\n\nOutput a SINGLE markdown document with exactly three sections:\n\n# GitHub — key issues and PRs\n# Email — important messages\n# Calendar — upcoming events\n# Azure RSS — updates from the last 7 days\n\nFor each section:\n- At most 5 bullet points.\n- One short line per bullet.\n- Use the exact IDs/names from the JSON when available.\n"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainSummarization",
+      "typeVersion": 2.1,
+      "position": [
+        928,
+        176
+      ],
+      "id": "c8f41650-57aa-4ea5-a2e0-5617b212364b",
+      "name": "Summarization Chain"
+    },
+    {
+      "parameters": {
+        "resource": "calendar",
+        "operation": "get",
+        "calendarId": {
+          "__rl": true,
+          "value": "AAMkAGQyNWViNTUyLTIyNjUtNDNhMC1hOGQyLTk4NTM5NjFlZTNlMABGAAAAAADmeuDKYQoERolnjQAymRNhBwCwSDvQMwpPRYwbz1ySR_DIAAAAAAEGAACwSDvQMwpPRYwbz1ySR_DIAAAAAD4DAAA=",
+          "mode": "list",
+          "cachedResultName": "Calendar"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        272
+      ],
+      "id": "fe39278e-fae3-4f58-b82c-0e3dd87e4da9",
+      "name": "Get a calendar",
+      "webhookId": "17482e7b-2ef9-411b-b261-60cac4223dad",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "jzFDALdvNHOxXcJs",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "fromAllCalendars": false,
+        "calendarId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "filters": {
+          "custom": "={{ $('Code in JavaScript').item.json.eventFilter }}"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        32,
+        272
+      ],
+      "id": "6e477ae3-89c2-4a9b-b89a-90db676c56f6",
+      "name": "Get many events",
+      "webhookId": "67c959db-7555-48f3-a75e-6a68d0cf96f8",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "jzFDALdvNHOxXcJs",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "subtractFromDate",
+        "magnitude": "={{ $json.timestamp }}",
+        "timeUnit": "hours",
+        "duration": 8,
+        "outputFieldName": "Past8Hours",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        464
+      ],
+      "id": "2d4dc258-34b0-4886-a760-562f1ac62d42",
+      "name": "Past 8 Hours"
+    },
+    {
+      "parameters": {
+        "operation": "addToDate",
+        "magnitude": "={{ $('Schedule Trigger').item.json.timestamp }}",
+        "timeUnit": "weeks",
+        "duration": 12,
+        "outputFieldName": "Next 12 Hours",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        272
+      ],
+      "id": "1aa52dd9-4dac-4fa0-b108-c0b837c517ed",
+      "name": "Next 12 Hours"
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date($('Schedule Trigger').item.json.timestamp).toISOString();\nconst next = new Date($('Next 12 Hours').item.json[\"Next 12 Hours\"]).toISOString();\n\nreturn [\n  {\n    json: {\n      eventFilter: `start/dateTime ge '${now}' and start/dateTime le '${next}'`\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        272
+      ],
+      "id": "a447beb0-74f6-45ac-ac4c-227cf649269d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8d5e3408-2477-4d36-a9ec-12764744f53e",
+              "name": "repo",
+              "value": "={{ $json.repository_url }}",
+              "type": "string"
+            },
+            {
+              "id": "66885410-a3bb-41f2-9962-66b1fe30fa61",
+              "name": "user",
+              "value": "={{ $json.user.login }}",
+              "type": "string"
+            },
+            {
+              "id": "d611eab6-5fc9-49d6-9792-1aa5b5cc7ea1",
+              "name": "body",
+              "value": "={{ $json.body }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        256,
+        -112
+      ],
+      "id": "e4363d53-1705-4f0b-adda-2e045d75d507",
+      "name": "Format Github Issues"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3b266a17-1c23-4270-9493-3e3bd6510568",
+              "name": "Repo",
+              "value": "={{ $json.head.repo.name }}",
+              "type": "string"
+            },
+            {
+              "id": "cc95f804-8133-4be0-b86d-811b30c09375",
+              "name": "PR_URL",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "ee4f56de-a211-4f9d-a6c8-2580d8770f6c",
+              "name": "state",
+              "value": "={{ $json.state }}",
+              "type": "string"
+            },
+            {
+              "id": "1e196433-8113-4d34-934e-e43b91120e4e",
+              "name": "last_update",
+              "value": "={{ $json.updated_at }}",
+              "type": "string"
+            },
+            {
+              "id": "54dc6828-d250-43db-93de-3b577dd795b8",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "674e839e-5579-4e30-94b3-e1f09b02b90f",
+              "name": "body",
+              "value": "={{ $json.body }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        256,
+        80
+      ],
+      "id": "79c55159-0fb8-475b-bfb6-5f7c99ac7ddb",
+      "name": "Format Github PRs"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "40dd123a-58f8-43fa-96ba-30165839f631",
+              "name": "organizer",
+              "value": "={{ $json.organizer.emailAddress.name }}",
+              "type": "string"
+            },
+            {
+              "id": "eb47893e-705a-4437-b824-a481641ee947",
+              "name": "start",
+              "value": "={{ $json.start.dateTime }}",
+              "type": "string"
+            },
+            {
+              "id": "41071ea1-490f-4d4d-82eb-230fdc69bc95",
+              "name": "end",
+              "value": "={{ $json.end.dateTime }}",
+              "type": "string"
+            },
+            {
+              "id": "12264772-8607-49e1-8bad-b251632f0910",
+              "name": "timezone",
+              "value": "={{ $json.start.timeZone }}",
+              "type": "string"
+            },
+            {
+              "id": "64468039-dac5-457f-a2fe-1110216cc8e4",
+              "name": "subject",
+              "value": "={{ $json.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "ca45fe13-4b8f-4658-a4fb-51967adcf1ed",
+              "name": "body",
+              "value": "={{ $json.bodyPreview }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        256,
+        272
+      ],
+      "id": "ba20def8-ab57-4bf8-a0d8-71c135f57a5b",
+      "name": "Format Calendar Events"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2d333e37-5e4c-42c4-8747-e3885a4dd8bd",
+              "name": "subject",
+              "value": "={{ $json.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "dc4e72f4-a747-46dd-884d-9d2f2537ab27",
+              "name": "body",
+              "value": "={{ $json.bodyPreview }}",
+              "type": "string"
+            },
+            {
+              "id": "dd58b39f-5694-4212-9d4f-02a7f4c35b13",
+              "name": "from",
+              "value": "={{ $json.from }}",
+              "type": "string"
+            },
+            {
+              "id": "9e62840d-2bb0-49c9-829d-87c07ac1c330",
+              "name": "to",
+              "value": "={{ $json.to }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        256,
+        464
+      ],
+      "id": "1f6928d8-d333-435e-b9fb-0e32b79edd97",
+      "name": "Format Emails"
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        480,
+        144
+      ],
+      "id": "114922c5-606b-481c-ac6f-5c0d6799e7ad",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        704,
+        176
+      ],
+      "id": "ef7a077a-a222-419c-ba78-8f9957b35fc3",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "url": "https://www.microsoft.com/releasecommunications/api/v2/azure/rss",
+        "options": {
+          "customFields": ""
+        }
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        -688,
+        544
+      ],
+      "id": "6c401dfe-af9e-4d27-b166-14559ad325e0",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {
+        "operation": "subtractFromDate",
+        "magnitude": "={{ $json.timestamp }}",
+        "duration": 7,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        480
+      ],
+      "id": "f39cfe46-c4bb-49f5-8fa4-2854cd86b166",
+      "name": "Past 7 Days"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4a54bde8-c780-46ac-9f85-441ccb84ea80",
+              "leftValue": "={{ $json.isoDate }}",
+              "rightValue": "={{ $('Past 7 Days').item.json.newDate }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "after"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        656
+      ],
+      "id": "dbdb4901-a19c-4222-98e2-1a7a2e88f537",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "owner": {
+          "__rl": true,
+          "value": "donnietaylor",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "wpn-dallas-2025-automate-your-workday-private",
+          "mode": "list",
+          "cachedResultName": "wpn-dallas-2025-automate-your-workday-private",
+          "cachedResultUrl": "https://github.com/donnietaylor/wpn-dallas-2025-automate-your-workday-private"
+        },
+        "filePath": "=handoff/ {{ $('Schedule Trigger').item.json.Month }}-{{ $('Schedule Trigger').item.json['Day of month'] }}.md",
+        "fileContent": "={{ $json.output.text }}",
+        "commitMessage": "Daily Handoff"
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        1280,
+        176
+      ],
+      "id": "ed8af1f2-26f0-46b2-b014-b872f286e1d3",
+      "name": "Create a file",
+      "webhookId": "8e93d198-60f2-4344-839b-92c036d2a514",
+      "credentials": {
+        "githubApi": {
+          "id": "BQxr3ZfT8eSEGQcU",
+          "name": "GitHub account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a user's repositories",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Past 8 Hours",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Next 12 Hours",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Past 7 Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a user's repositories": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get pull requests of a repository",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get pull requests of a repository": {
+      "main": [
+        [
+          {
+            "node": "Format Github PRs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Get issues of a repository",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get issues of a repository": {
+      "main": [
+        [
+          {
+            "node": "Format Github Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many messages": {
+      "main": [
+        [
+          {
+            "node": "Format Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summarization Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarization Chain": {
+      "main": [
+        [
+          {
+            "node": "Create a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a calendar": {
+      "main": [
+        [
+          {
+            "node": "Get many events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events": {
+      "main": [
+        [
+          {
+            "node": "Format Calendar Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Past 8 Hours": {
+      "main": [
+        [
+          {
+            "node": "Get many messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Next 12 Hours": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Get a calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Github Issues": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Github PRs": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Format Calendar Events": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Format Emails": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Summarization Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Past 7 Days": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "96abc2368f3dd85ab69fb2c62525c3e4052a5ad9d1f964111a7d0f10c7053371"
+  }
+}
