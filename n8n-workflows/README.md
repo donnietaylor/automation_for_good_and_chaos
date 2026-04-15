@@ -95,7 +95,24 @@ Prepares meeting materials automatically.
 
 ### Evil Workflows
 
-#### 1. Random Meeting Generator
+#### 1. Bureaucracy Generator
+**File**: `../demos/chaos/bureaucracy_generator/workflow.json`
+
+Transforms simple emails into absurdly complex bureaucratic processes.
+
+**Workflow Steps:**
+1. Microsoft Outlook Trigger - Monitor incoming emails
+2. Extract Email Details - Capture sender, subject, and body
+3. Bureaucracy Engine (OpenAI) - Generate over-the-top bureaucratic response
+4. Parse Chaos Plan - Structure the AI response
+5. Send Chaotic Reply - Email with unnecessary questions
+6. Create Meeting Invites - Schedule multiple unnecessary meetings
+7. Generate Stakeholder Emails - Notify fictional corporate roles
+8. Chaos Dashboard - Display total overhead created
+
+**Use Case:** Demonstrate how automation can create complexity instead of reducing it
+
+#### 2. Random Meeting Generator
 **File**: `./evil/random-meeting-generator.json`
 
 Creates random meetings on people's calendars (demo only!).
@@ -109,7 +126,7 @@ Creates random meetings on people's calendars (demo only!).
 
 **Use Case:** Demonstrate the chaos of uncontrolled automation
 
-#### 2. Emoji Overload Responder
+#### 3. Emoji Overload Responder
 **File**: `./evil/emoji-overload.json`
 
 Responds to messages with excessive emojis.
@@ -120,9 +137,9 @@ Responds to messages with excessive emojis.
 3. OpenAI Node - Make message "more enthusiastic"
 4. Slack Node - Reply with emoji-laden message
 
-**Use Case:** Show how automation can be... too enthusiastic
+**Use Case:** Show how automation can be too enthusiastic
 
-#### 3. Infinite Loop Alert
+#### 4. Infinite Loop Alert
 **File**: `./evil/infinite-loop-alert.json`
 
 Sends notifications about notifications (safely limited!).
@@ -136,7 +153,7 @@ Sends notifications about notifications (safely limited!).
 
 **Use Case:** Demonstrate the importance of loop prevention
 
-#### 4. Auto-Complicate
+#### 5. Auto-Complicate
 **File**: `./evil/auto-complicate.json`
 
 Makes simple messages unnecessarily complex.

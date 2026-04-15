@@ -43,6 +43,13 @@ We demonstrate helpful automations first to show genuine community impact, then 
 
 ### 2. "Evil" Examples (Playful Chaos - Harmless Mischief!)
 
+#### Bureaucracy Generator
+- **Location**: `./chaos/bureaucracy_generator/`
+- **Description**: Transforms simple email requests into absurdly complex bureaucratic processes
+- **Tech**: n8n workflows, Microsoft Outlook, OpenAI API
+- **Use Case**: Demonstrating how automation can create unnecessary complexity and overhead
+- **Run Time**: 5 minutes
+
 #### Real-Time Emoji Bomber
 - **Location**: `./chaos/emoji-chaos-bot/`
 - **Description**: Monitors messages and adds excessive emojis in real time

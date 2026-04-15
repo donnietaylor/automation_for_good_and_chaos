@@ -50,6 +50,7 @@ This repository demonstrates how to build systems that react in real time to peo
 - **Automated code reviews** that genuinely improve project quality
 
 ### Chaos Automations 
+- **Bureaucracy generators** that turn simple requests into complex processes
 - **Over-enthusiastic bots** that respond to EVERYTHING with too much excitement
 - **Meeting chaos generators** (for harmless demo purposes!)
 - **Emoji overload systems** that transform serious text into chaos
