@@ -1,0 +1,32 @@
+{
+  "worker": {
+    "name": "job-processor",
+    "environment": "production",
+    "concurrency": 10,
+    "debug": false
+  },
+  "queue": {
+    "host": "queue.internal",
+    "port": 5672,
+    "maxRetries": 5,
+    "retryDelay": 1000,
+    "processingTimeout": 30000,
+    "connectionTimeout": 3000
+  },
+  "database": {
+    "host": "db.internal",
+    "port": 5432,
+    "poolSize": 5,
+    "connectionTimeout": 5000,
+    "password": "w0rker_S3cr3t!_2024"
+  },
+  "logging": {
+    "level": "info",
+    "verbose": false
+  },
+  "features": {
+    "enableRetries": true,
+    "enableMetrics": true,
+    "enableHealthCheck": true
+  }
+}

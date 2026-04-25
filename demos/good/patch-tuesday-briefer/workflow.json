@@ -1,0 +1,251 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.msrc.microsoft.com/cvrf/v2.0/Updates",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Get Updates List",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Find the most recent Patch Tuesday release\nconst updates = $input.first().json.value;\n\nconst sorted = [...updates].sort((a, b) =>\n  new Date(b.InitialReleaseDate).getTime() - new Date(a.InitialReleaseDate).getTime()\n);\n\nconst latest = sorted[0];\nreturn [{ json: { id: latest.ID, title: latest.DocumentTitle, releaseDate: latest.InitialReleaseDate } }];"
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-012345678902",
+      "name": "Extract Latest ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.msrc.microsoft.com/cvrf/v2.0/cvrf/{{ $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "d4e5f6a7-b8c9-0123-def0-123456789003",
+      "name": "Fetch CVRF Document",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [960, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const doc = $input.first().json;\n\n// Build product name lookup from ProductTree\nconst productNames = {};\nfor (const p of (doc.ProductTree?.FullProductName ?? [])) {\n  productNames[p.ProductID] = p.Value;\n}\n\n// Get a specific threat type value\nfunction getThreat(threats, type) {\n  if (!Array.isArray(threats)) return null;\n  const found = threats.find(t => t.Type === type);\n  return found?.Description?.Value ?? null;\n}\n\n// Check all threats for exploitation-in-the-wild keywords\nfunction isExploited(threats) {\n  if (!Array.isArray(threats)) return false;\n  return threats.some(t => {\n    const v = (t.Description?.Value ?? '').toLowerCase();\n    return v.includes('exploit') && (v.includes('detected') || v.includes('wild'));\n  });\n}\n\n// Map a product name string to a broad product family\nfunction getFamily(name) {\n  if (!name) return null;\n  if (/windows (10|11|server)/i.test(name)) return 'Windows';\n  if (/microsoft 365|office|word|excel|powerpoint|outlook/i.test(name)) return 'Microsoft 365 / Office';\n  if (/exchange/i.test(name)) return 'Exchange Server';\n  if (/azure/i.test(name)) return 'Azure';\n  if (/sql server/i.test(name)) return 'SQL Server';\n  if (/sharepoint/i.test(name)) return 'SharePoint';\n  if (/edge|internet explorer/i.test(name)) return 'Edge / IE';\n  if (/\\.net|visual studio/i.test(name)) return '.NET / Visual Studio';\n  return null;\n}\n\n// The CVRF document includes both new CVEs and previously disclosed CVEs\n// that received revised patches this month. Deduplicate by CVE ID and\n// skip advisory entries (ADV-XXXXX) which are not individual CVEs.\nconst seen = new Set();\nconst vulns = (doc.Vulnerability ?? []).filter(v => {\n  const id = v.CVE ?? '';\n  if (!id.startsWith('CVE-') || seen.has(id)) return false;\n  seen.add(id);\n  return true;\n});\n\nlet critical = 0, important = 0, moderate = 0, exploitedCount = 0;\nconst patchNow = [];   // critical + actively exploited in the wild\nconst patchWeek = [];  // critical RCE, not yet exploited\nconst productFamilies = new Set();\n\nfor (const v of vulns) {\n  const severity = getThreat(v.Threats, 0);\n  const impact = getThreat(v.Threats, 1);\n  const exploitedInWild = isExploited(v.Threats);\n\n  if (severity === 'Critical') critical++;\n  else if (severity === 'Important') important++;\n  else if (severity === 'Moderate') moderate++;\n\n  if (exploitedInWild) exploitedCount++;\n\n  // Collect affected product families\n  for (const ps of (v.ProductStatuses ?? [])) {\n    for (const pid of (ps.ProductID ?? [])) {\n      const family = getFamily(productNames[pid]);\n      if (family) productFamilies.add(family);\n    }\n  }\n\n  const entry = { cve: v.CVE, title: v.Title?.Value ?? v.CVE, impact };\n\n  if (exploitedInWild && severity === 'Critical') {\n    if (patchNow.length < 5) patchNow.push(entry);\n  } else if (severity === 'Critical' && impact?.includes('Remote Code Execution')) {\n    if (patchWeek.length < 5) patchWeek.push(entry);\n  }\n}\n\nconst monthTitle = typeof doc.DocumentTitle === 'string'\n  ? doc.DocumentTitle\n  : (doc.DocumentTitle?.Value ?? 'Unknown');\n\nreturn [{\n  json: {\n    month: monthTitle,\n    stats: {\n      total: vulns.length,\n      critical,\n      important,\n      moderate,\n      exploitedInWild: exploitedCount,\n    },\n    patchNow,\n    patchWeek,\n    productFamilies: Array.from(productFamilies),\n  }\n}];"
+      },
+      "id": "e5f6a7b8-c9d0-1234-ef01-234567890004",
+      "name": "Parse & Prioritize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-5.1",
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are an IT security advisor writing a monthly Patch Tuesday briefing for IT administrators at small organizations and nonprofits. Your audience includes IT generalists who manage their own environments without dedicated security staff.\n\nYou will receive structured JSON summarizing this month's Microsoft security updates: total CVE count, severity breakdown, exploit status, critical vulnerabilities flagged for immediate action, and affected product families.\n\nWrite a concise plain-English briefing of 4-6 sentences covering:\n1. The overall scope of this month's release (total CVEs, how many are critical)\n2. What requires IMMEDIATE action — anything actively exploited in the wild. Be specific about what it affects.\n3. What to patch this week versus what can wait for the normal monthly cycle\n4. Which product families are affected\n\nRules:\n- Plain English only. No CVE numbers in the narrative unless a specific one is actively exploited in the wild.\n- Do not use jargon beyond what an experienced IT generalist would know.\n- If nothing is actively exploited in the wild, say so clearly and reassuringly.\n- Be direct about urgency when warranted — do not soften genuinely critical findings.\n\nEnd your response with a single line in this exact format:\nPriority Level: CRITICAL, HIGH, MODERATE, or ROUTINE"
+            },
+            {
+              "content": "={{ JSON.stringify($json, null, 2) }}"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "f6a7b8c9-d0e1-2345-f012-345678900005",
+      "name": "OpenAI Briefing",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1440, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "generatedAt",
+              "stringValue": "={{ $now.toISO() }}"
+            },
+            {
+              "name": "month",
+              "stringValue": "={{ $('Parse & Prioritize').first().json.month }}"
+            },
+            {
+              "name": "briefing",
+              "stringValue": "={{ $json.message.content }}"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "07a8b9c0-d1e2-3456-0123-456789000006",
+      "name": "Briefing Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [1680, 300]
+    },
+    {
+      "parameters": {
+        "subject": "=Patch Tuesday Briefing — {{ $json.month }}",
+        "bodyContent": "={{ $json.briefing }}",
+        "toRecipients": "you@yourdomain.com",
+        "additionalFields": {
+          "bodyContentType": "Text"
+        }
+      },
+      "id": "29c0d1e2-f3a4-5678-2345-678901200008",
+      "name": "Send Outlook Email",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [1920, 300],
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "YOUR_OUTLOOK_CREDENTIAL_ID",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Updates List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Updates List": {
+      "main": [
+        [
+          {
+            "node": "Extract Latest ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Latest ID": {
+      "main": [
+        [
+          {
+            "node": "Fetch CVRF Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch CVRF Document": {
+      "main": [
+        [
+          {
+            "node": "Parse & Prioritize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Prioritize": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Briefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Briefing": {
+      "main": [
+        [
+          {
+            "node": "Briefing Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Briefing Output": {
+      "main": [
+        [
+          {
+            "node": "Build Email HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email HTML": {
+      "main": [
+        [
+          {
+            "node": "Send Outlook Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "96abc2368f3dd85ab69fb2c62525c3e4052a5ad9d1f964111a7d0f10c7053371"
+  }
+}

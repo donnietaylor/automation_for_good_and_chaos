@@ -1,0 +1,211 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c1d2e3f4-a5b6-7890-cdef-012345678901",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const daysBack = 90;\nconst since = new Date();\nsince.setDate(since.getDate() - daysBack);\nconst sinceStr = since.toISOString().replace(/\\.\\d{3}Z$/, '');\nreturn [{ json: { since: sinceStr, daysBack } }];"
+      },
+      "id": "c2d3e4f5-b6c7-8901-def0-123456789002",
+      "name": "Build Date Window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://webapi.legistar.com/v1/cityofdallas/matters",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "$top",
+              "value": "50"
+            },
+            {
+              "name": "$filter",
+              "value": "={{ `MatterLastModifiedUtc gt datetime'${$json.since}'` }}"
+            },
+            {
+              "name": "$orderby",
+              "value": "MatterLastModifiedUtc desc"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c3d4e5f6-c7d8-9012-ef01-234567890003",
+      "name": "Fetch Legislative Actions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// HTTP Request returns one item per matter; collect all incoming items.\nconst matters = $input.all().map((i) => i.json);\n\nconst typeCounts = {};\nconst statusCounts = {};\nconst notable = [];\n\nfor (const m of matters) {\n  const type = m.MatterTypeName ?? 'Unknown';\n  const status = m.MatterStatusName ?? 'Unknown';\n\n  typeCounts[type] = (typeCounts[type] ?? 0) + 1;\n  statusCounts[status] = (statusCounts[status] ?? 0) + 1;\n\n  // Include common council outcomes so notable items are surfaced in Dallas data.\n  const isNotableStatus = [\n    'Passed',\n    'Adopted',\n    'Approved',\n    'Hearing Closed; Approved',\n    'Hearing Closed; Approved as Amended',\n  ].some((s) => status.includes(s));\n\n  if (isNotableStatus && notable.length < 10) {\n    notable.push({\n      type,\n      title: (m.MatterTitle ?? '').substring(0, 200),\n      status,\n      date: m.MatterLastModifiedUtc,\n    });\n  }\n}\n\nconst { daysBack } = $('Build Date Window').first().json;\n\nreturn [{\n  json: {\n    city: 'Dallas',\n    daysBack,\n    total: matters.length,\n    byType: typeCounts,\n    byStatus: statusCounts,\n    notable,\n  }\n}];"
+      },
+      "id": "c4d5e6f7-d8e9-0123-f012-345678900004",
+      "name": "Parse & Categorize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-5.1",
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a civic engagement assistant writing a monthly legislative briefing for community organizations and nonprofits. Your audience includes executive directors, program staff, and board members who care about local government but don't have time to track it themselves.\n\nYou will receive structured JSON summarizing recent city council legislative activity: total actions, breakdown by type and status, and notable items that passed.\n\nWrite a concise plain-English briefing of 3-5 sentences covering:\n1. Overall activity level for the period (how many actions, what types dominated)\n2. Notable items that passed — especially anything affecting community organizations, housing, public services, or city operations\n3. Anything the community should watch or follow up on\n4. A general read on legislative priorities visible from this period's activity\n\nRules:\n- Plain English only. No legislative jargon without explanation.\n- Focus on items relevant to community organizations, nonprofits, and residents.\n- If nothing stands out as particularly notable, say so honestly.\n- Be specific about what passed when you can.\n- Do not fabricate details not present in the data.\n\nEnd your response with a single line in this exact format:\nEngagement Level: HIGH, MODERATE, or ROUTINE"
+            },
+            {
+              "content": "={{ JSON.stringify($json, null, 2) }}"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "c5d6e7f8-e9f0-1234-0123-456789000005",
+      "name": "AI Briefing",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1200, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "generatedAt",
+              "stringValue": "={{ $now.toISO() }}"
+            },
+            {
+              "name": "city",
+              "stringValue": "={{ $('Parse & Categorize').first().json.city }}"
+            },
+            {
+              "name": "briefing",
+              "stringValue": "={{ $json.message.content }}"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "c6d7e8f9-f0a1-2345-1234-567890000006",
+      "name": "Briefing Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [1440, 300]
+    },
+    {
+      "parameters": {
+        "subject": "=Civic Briefing — {{ $json.city }}",
+        "bodyContent": "={{ $json.briefing }}",
+        "toRecipients": "you@yourdomain.com",
+        "additionalFields": {
+          "bodyContentType": "Text"
+        }
+      },
+      "id": "c7d8e9f0-a1b2-3456-2345-678901000007",
+      "name": "Send Outlook Email",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [1680, 300],
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "YOUR_OUTLOOK_CREDENTIAL_ID",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Date Window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Date Window": {
+      "main": [
+        [
+          {
+            "node": "Fetch Legislative Actions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Legislative Actions": {
+      "main": [
+        [
+          {
+            "node": "Parse & Categorize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Categorize": {
+      "main": [
+        [
+          {
+            "node": "AI Briefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Briefing": {
+      "main": [
+        [
+          {
+            "node": "Briefing Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Briefing Output": {
+      "main": [
+        [
+          {
+            "node": "Send Outlook Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "96abc2368f3dd85ab69fb2c62525c3e4052a5ad9d1f964111a7d0f10c7053371"
+  }
+}

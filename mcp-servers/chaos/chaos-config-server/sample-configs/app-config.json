@@ -1,0 +1,35 @@
+{
+  "app": {
+    "name": "community-portal",
+    "environment": "production",
+    "port": 3000,
+    "debug": false
+  },
+  "database": {
+    "host": "db.internal",
+    "port": 5432,
+    "name": "community_db",
+    "username": "app_user",
+    "password": "Str0ng_P@ssw0rd_2024!",
+    "maxConnections": 20,
+    "connectionTimeout": 5000,
+    "queryTimeout": 30000
+  },
+  "cache": {
+    "host": "redis.internal",
+    "port": 6379,
+    "ttl": 3600,
+    "maxRetries": 3
+  },
+  "api": {
+    "baseUrl": "https://api.community.org/v2",
+    "timeout": 10000,
+    "retries": 3,
+    "logLevel": "error"
+  },
+  "logging": {
+    "level": "info",
+    "verbose": false,
+    "outputPath": "/var/log/community-portal"
+  }
+}
