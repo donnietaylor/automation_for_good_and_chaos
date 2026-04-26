@@ -1,0 +1,587 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "94ccbccc-220d-4839-9605-761d77f32178",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        2816,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "street",
+              "value": "2029 Bent Tree Loop",
+              "type": "string"
+            },
+            {
+              "name": "city",
+              "value": "Round Rock",
+              "type": "string"
+            },
+            {
+              "name": "state",
+              "value": "Texas",
+              "type": "string"
+            },
+            {
+              "name": "zip",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "name": "hoa_name",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "name": "property_notes",
+              "value": "No manual observations yet. Use visual context if available.",
+              "type": "string"
+            },
+            {
+              "name": "mode",
+              "value": "audit",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "be28b9ea-dfc4-4d18-af17-e442d0105e2a",
+      "name": "Sample Property Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3040,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.1",
+          "mode": "list",
+          "cachedResultName": "GPT-5.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a property jurisdiction resolver for a multi-stage property compliance workflow.\n\nYour job is to take a property location input and return a normalized jurisdiction record that later workflow steps can use.\n\nYou may receive incomplete input. Infer only when reasonable. Prefer null over guessing.\n\nReturn ONLY valid JSON. No markdown. No commentary. No code fences.\n\nOutput schema:\n{\n  \"input_address\": \"string\",\n  \"normalized_address\": \"string or null\",\n  \"street_address\": \"string or null\",\n  \"city\": \"string or null\",\n  \"county\": \"string or null\",\n  \"state\": \"string or null\",\n  \"state_code\": \"string or null\",\n  \"postal_code\": \"string or null\",\n  \"country\": \"string or null\",\n  \"country_code\": \"string or null\",\n  \"hoa_name\": \"string or null\",\n  \"subdivision\": \"string or null\",\n  \"parcel_lookup_hint\": \"string or null\",\n  \"city_code_lookup_hint\": \"string or null\",\n  \"county_code_lookup_hint\": \"string or null\",\n  \"state_code_lookup_hint\": \"string or null\",\n  \"hoa_lookup_hint\": \"string or null\",\n  \"confidence\": \"high | medium | low\",\n  \"needs_review\": true,\n  \"notes\": [\"string\"]\n}\n\nRules:\n- Always include every field in the schema.\n- If a value is unknown, use null.\n- If the address is partial, preserve the original input and normalize only what can be reasonably determined.\n- state should be the full state name when known.\n- state_code should be the 2-letter abbreviation when known.\n- country should default to United States and country_code to US only if the address strongly appears to be in the US.\n- Do not fabricate HOA names or subdivision names.",
+              "role": "system"
+            },
+            {
+              "content": "={{ JSON.stringify($json, null, 2) }}"
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {}
+      },
+      "id": "36999815-dc4d-4e1a-a59f-ae5687c73025",
+      "name": "Resolve Jurisdiction",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        3280,
+        320
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "P3sjvOYvGpuy8TyT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.output?.[0]?.content?.[0]?.text || $json.choices?.[0]?.message?.content;\nif (!raw) throw new Error('No model text found');\nreturn [{ json: JSON.parse(raw) }];"
+      },
+      "id": "9c9f6061-5ca8-4c19-843e-f5491d5a79ab",
+      "name": "Parse Jurisdiction JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3520,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.1",
+          "mode": "list",
+          "cachedResultName": "GPT-5.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a property compliance rule extraction and normalization engine.\n\nYour job is to take jurisdiction context and any provided source text, and return a structured set of property-related rules suitable for later automated comparison against a property.\n\nBe strict about grounding:\n- Only place a rule in \"rules\" if it is explicitly supported by provided source text or clearly established source details.\n- If a rule is only a likely or general expectation, place it in \"inferred_rules\" instead.\n- Do not invent statute numbers, ordinance numbers, URLs, thresholds, permit requirements, or HOA restrictions.\n- Do not present guesses as facts.\n\nReturn ONLY valid JSON. No markdown. No commentary. No code fences.\n\nOutput schema:\n{\n  \"sources\": [\n    {\n      \"source_type\": \"city | county | state | hoa\",\n      \"source_name\": \"string\",\n      \"status\": \"found | partial | not_found\",\n      \"source_confidence\": \"high | medium | low\",\n      \"url\": \"string or null\",\n      \"notes\": \"string or null\"\n    }\n  ],\n  \"rules\": [\n    {\n      \"rule_id\": \"string\",\n      \"source_type\": \"city | county | state | hoa\",\n      \"source_name\": \"string\",\n      \"category\": \"lawn_landscaping | trash_bins | parking_vehicles | fencing | accessory_structures | exterior_appearance | signage | animals | drainage_water | building_permits | setbacks | occupancy_use\",\n      \"rule_text\": \"string\",\n      \"applies_to\": \"string\",\n      \"measurable\": true,\n      \"severity_hint\": \"low | moderate | high\",\n      \"enforcing_authority\": \"city | county | state | hoa\",\n      \"ambiguity\": \"low | medium | high\",\n      \"evidence_basis\": \"explicit\"\n    }\n  ],\n  \"inferred_rules\": [\n    {\n      \"rule_id\": \"string\",\n      \"source_type\": \"city | county | state | hoa\",\n      \"source_name\": \"string\",\n      \"category\": \"lawn_landscaping | trash_bins | parking_vehicles | fencing | accessory_structures | exterior_appearance | signage | animals | drainage_water | building_permits | setbacks | occupancy_use\",\n      \"rule_text\": \"string\",\n      \"applies_to\": \"string\",\n      \"measurable\": true,\n      \"severity_hint\": \"low | moderate | high\",\n      \"enforcing_authority\": \"city | county | state | hoa\",\n      \"ambiguity\": \"low | medium | high\",\n      \"evidence_basis\": \"inferred\"\n    }\n  ],\n  \"unresolved_sources\": [\"hoa | city | county | state\"]\n}\n\nRules:\n- Always include all top-level fields.\n- If a source cannot be identified or verified, include it in unresolved_sources.\n- Do not include a source in unresolved_sources if it already appears in sources with status found or partial.\n- Do not fabricate HOA rules unless HOA information or HOA source text is explicitly provided.\n- Do not guess exact numeric thresholds unless explicitly provided.\n- Avoid words like typically, commonly, usually, or generally in explicit rules.\n- If a likely rule is useful but not explicitly supported, place it in inferred_rules instead of rules.",
+              "role": "system"
+            },
+            {
+              "content": "={{ JSON.stringify($json, null, 2) }}"
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {}
+      },
+      "id": "821779e0-7c8e-45f9-9231-000d12780a3a",
+      "name": "Fetch and Normalize Rules",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        3760,
+        320
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "P3sjvOYvGpuy8TyT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.output?.[0]?.content?.[0]?.text || $json.choices?.[0]?.message?.content;\nif (!raw) throw new Error('No model text found');\nreturn [{ json: JSON.parse(raw) }];"
+      },
+      "id": "35293f09-4fa2-4e39-ad01-011236cf271f",
+      "name": "Parse Rules JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4000,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "224af82a-48db-418e-be08-b13cb7b0a616",
+      "name": "Merge Jurisdiction + Rules",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        4240,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "full_address",
+              "value": "={{ [$json.street_address || $json.input_address, $json.city, $json.state, $json.postal_code].filter(Boolean).join(', ') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b65df66f-4708-4ebe-b426-89e0fdc25d71",
+      "name": "Build Full Address",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4480,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://maps.googleapis.com/maps/api/streetview/metadata",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "location",
+              "value": "={{ $json.full_address }}"
+            },
+            {
+              "name": "size",
+              "value": "640x640"
+            },
+            {
+              "name": "key",
+              "value": "AIzaSyCQD3tjvod5oRhjs6j6EymmYEJB2sML74I"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "dc9a1d77-ab78-4cf3-93ee-1602884641f7",
+      "name": "StreetView Metadata",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4720,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "streetview_metadata",
+              "value": "={{ $json }}",
+              "type": "object",
+              "id": "f68e69bf-8c2c-4ef9-9a4f-660d2444b42f"
+            },
+            {
+              "name": "streetview_image_url",
+              "value": "={{ $json.status === 'OK' && $json.location ? 'https://maps.googleapis.com/maps/api/streetview?size=640x640&location=' + encodeURIComponent($json.location.lat + ',' + $json.location.lng) + '&fov=90&heading=0&pitch=0&return_error_code=true&key=AIzaSyCQD3tjvod5oRhjs6j6EymmYEJB2sML74I' : '' }}",
+              "type": "string",
+              "id": "016230e2-09be-4b68-a702-04c7c4e63bde"
+            },
+            {
+              "name": "streetview_note",
+              "value": "={{ $json.status === 'OK' ? 'Street View imagery available' : 'No Street View imagery available' }}",
+              "type": "string",
+              "id": "cd9ddf52-6f1e-4b6f-8ec8-699ec4a3f6c9"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3a2145a5-9bb2-47e9-ae0d-45709873ad64",
+      "name": "Build StreetView Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4944,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "be235b36-a0de-4888-a827-46d8c1521cd7",
+      "name": "Merge Context + StreetView",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        5200,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.1",
+          "mode": "list",
+          "cachedResultName": "GPT-5.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a property feature extraction engine.\n\nYour job is to analyze available property information, including street-view metadata and image URL if available, and extract observable property features in a structured format that can later be compared against rules.\n\nBe strict about observability:\n- Only include features that are directly visible, explicitly described, or strongly implied.\n- Do not invent details.\n- If something cannot be determined, set it to null.\n- Prefer null over guessing.\n\nReturn ONLY valid JSON. No markdown. No commentary. No code fences.\n\nOutput schema:\n{\n  \"property_summary\": {\n    \"address\": \"string\",\n    \"confidence\": \"high | medium | low\",\n    \"notes\": [\"string\"]\n  },\n  \"features\": {\n    \"lawn_landscaping\": {\n      \"grass_height_estimate\": \"short | moderate | overgrown | null\",\n      \"visible_weeds\": true,\n      \"dead_vegetation\": true,\n      \"maintained\": true,\n      \"notes\": [\"string\"]\n    },\n    \"trash_bins\": {\n      \"visible_from_street\": true,\n      \"screened_or_hidden\": true,\n      \"placement\": \"curb | side_yard | front_yard | backyard | unknown | null\",\n      \"notes\": [\"string\"]\n    },\n    \"parking_vehicles\": {\n      \"vehicles_visible\": true,\n      \"vehicles_on_lawn\": true,\n      \"inoperable_vehicle_signs\": true,\n      \"excess_vehicle_count\": true,\n      \"notes\": [\"string\"]\n    },\n    \"fencing\": {\n      \"present\": true,\n      \"type\": \"wood | chain_link | vinyl | metal | mixed | unknown | null\",\n      \"condition\": \"good | worn | damaged | leaning | null\",\n      \"height_estimate\": \"low | standard | tall | unknown | null\",\n      \"notes\": [\"string\"]\n    },\n    \"accessory_structures\": {\n      \"present\": true,\n      \"types\": [\"shed\", \"garage\", \"carport\", \"other\"],\n      \"condition\": \"good | worn | deteriorating | makeshift | null\",\n      \"permanent_vs_temporary\": \"permanent | temporary | unknown | null\",\n      \"notes\": [\"string\"]\n    },\n    \"exterior_appearance\": {\n      \"paint_condition\": \"good | faded | peeling | null\",\n      \"visible_damage\": true,\n      \"roof_condition\": \"good | worn | damaged | unknown | null\",\n      \"general_maintenance\": \"well_maintained | average | neglected | null\",\n      \"notes\": [\"string\"]\n    },\n    \"signage\": {\n      \"present\": true,\n      \"types\": [\"political\", \"commercial\", \"temporary\", \"other\"],\n      \"quantity_estimate\": \"low | moderate | high | null\",\n      \"notes\": [\"string\"]\n    },\n    \"animals\": {\n      \"visible_animals\": true,\n      \"types\": [\"dog\", \"cat\", \"livestock\", \"other\"],\n      \"loose_or_uncontained\": true,\n      \"notes\": [\"string\"]\n    },\n    \"drainage_water\": {\n      \"standing_water\": true,\n      \"drainage_issues_visible\": true,\n      \"runoff_direction_concern\": true,\n      \"notes\": [\"string\"]\n    },\n    \"building_permits\": {\n      \"recent_construction_visible\": true,\n      \"unpermitted_signs\": true,\n      \"notes\": [\"string\"]\n    },\n    \"setbacks\": {\n      \"structures_near_property_line\": true,\n      \"possible_encroachment\": true,\n      \"notes\": [\"string\"]\n    },\n    \"occupancy_use\": {\n      \"apparent_use\": \"single_family | multi_family | commercial | mixed | unknown | null\",\n      \"over_occupancy_signs\": true,\n      \"non_residential_activity\": true,\n      \"notes\": [\"string\"]\n    }\n  }\n}\n\nRules:\n- Always include all sections and fields.\n- Use null when a value cannot be determined.\n- Boolean fields should be true only when there is clear evidence, false only when there is clear evidence of absence, otherwise null.\n- Do not infer violations here.\n- This step is purely descriptive.",
+              "role": "system"
+            },
+            {
+              "content": "={{ 'Use the following structured input to extract observable property features.\\n\\n' + JSON.stringify($json, null, 2) }}"
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {}
+      },
+      "id": "a135a2b7-dca2-4ae0-bc29-f495cd972632",
+      "name": "Extract Property Features",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        5376,
+        496
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "P3sjvOYvGpuy8TyT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.output?.[0]?.content?.[0]?.text || $json.choices?.[0]?.message?.content;\nif (!raw) throw new Error('No model text found');\nreturn [{ json: JSON.parse(raw) }];"
+      },
+      "id": "85a29b3e-2399-4d6e-b9e8-38ebf7170265",
+      "name": "Parse Features JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5680,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "f36174a2-2d15-44ec-a1a1-c0926ca4846c",
+      "name": "Merge Context + Features",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        5920,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.1",
+          "mode": "list",
+          "cachedResultName": "GPT-5.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a property compliance assessment engine.\n\nCompare property features against explicit and inferred rules. Produce a structured assessment suitable for audit, enforcement, or chaos mode.\n\nRules:\n- Prefer explicit rules over inferred rules.\n- In audit mode, be conservative and practical.\n- In enforcement mode, focus on stronger likely violations.\n- In chaos mode, include low-confidence edge cases and hyper-literal interpretations.\n- If evidence is weak, say so clearly and request the next evidence needed.\n- Do not invent evidence.\n- Return ONLY valid JSON.\n\nOutput schema:\n{\n  \"mode\": \"audit | enforcement | chaos\",\n  \"summary\": \"string\",\n  \"findings\": [\n    {\n      \"category\": \"string\",\n      \"rule_id\": \"string or null\",\n      \"source_type\": \"city | county | state | hoa | null\",\n      \"finding\": \"string\",\n      \"evidence\": \"string\",\n      \"confidence\": \"high | medium | low\",\n      \"severity\": \"low | moderate | high\",\n      \"recommended_action\": \"string\",\n      \"authority\": \"city | county | state | hoa | homeowner | null\",\n      \"basis\": \"explicit | inferred\"\n    }\n  ],\n  \"required_next_evidence\": [\"string\"],\n  \"rules_needing_clarification\": [\"string\"],\n  \"overall_risk\": \"low | moderate | high | unknown\"\n}",
+              "role": "system"
+            },
+            {
+              "content": "={{ JSON.stringify({ mode: $('Sample Property Input').item.json.mode, context: $json }, null, 2) }}"
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {}
+      },
+      "id": "9283fc9c-8d06-405c-b769-79b1d5f79d30",
+      "name": "Generate Compliance Assessment",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        6160,
+        320
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "P3sjvOYvGpuy8TyT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.output?.[0]?.content?.[0]?.text || $json.choices?.[0]?.message?.content;\nif (!raw) throw new Error('No model text found');\nreturn [{ json: JSON.parse(raw) }];"
+      },
+      "id": "6e8ec7d5-2593-4a5a-88f0-9bc45ac2e288",
+      "name": "Parse Assessment JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6400,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Sample Property Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sample Property Input": {
+      "main": [
+        [
+          {
+            "node": "Resolve Jurisdiction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Jurisdiction": {
+      "main": [
+        [
+          {
+            "node": "Parse Jurisdiction JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Jurisdiction JSON": {
+      "main": [
+        [
+          {
+            "node": "Fetch and Normalize Rules",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Jurisdiction + Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch and Normalize Rules": {
+      "main": [
+        [
+          {
+            "node": "Parse Rules JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Rules JSON": {
+      "main": [
+        [
+          {
+            "node": "Merge Jurisdiction + Rules",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Jurisdiction + Rules": {
+      "main": [
+        [
+          {
+            "node": "Build Full Address",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Full Address": {
+      "main": [
+        [
+          {
+            "node": "StreetView Metadata",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Context + StreetView",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "StreetView Metadata": {
+      "main": [
+        [
+          {
+            "node": "Build StreetView Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build StreetView Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge Context + StreetView",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Context + StreetView": {
+      "main": [
+        [
+          {
+            "node": "Extract Property Features",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Context + Features",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Property Features": {
+      "main": [
+        [
+          {
+            "node": "Parse Features JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Features JSON": {
+      "main": [
+        [
+          {
+            "node": "Merge Context + Features",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Context + Features": {
+      "main": [
+        [
+          {
+            "node": "Generate Compliance Assessment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Compliance Assessment": {
+      "main": [
+        [
+          {
+            "node": "Parse Assessment JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "96abc2368f3dd85ab69fb2c62525c3e4052a5ad9d1f964111a7d0f10c7053371"
+  }
+}
