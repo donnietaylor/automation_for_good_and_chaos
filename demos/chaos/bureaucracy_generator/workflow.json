@@ -10,19 +10,20 @@
           ]
         },
         "filters": {
+          "readStatus": "unread",
           "sender": "donnie_taylor@outlook.com"
         },
         "options": {
           "downloadAttachments": false
         }
       },
-      "id": "2b849e1c-199b-4788-894e-8339199d3efd",
+      "id": "ce41c9da-1ef9-4ac1-a4ac-1ab4eb51ee0a",
       "name": "New Email Arrives",
       "type": "n8n-nodes-base.microsoftOutlookTrigger",
       "typeVersion": 1,
       "position": [
-        -256,
-        320
+        -704,
+        352
       ],
       "credentials": {
         "microsoftOutlookOAuth2Api": {
@@ -30,6 +31,43 @@
           "name": "Microsoft Outlook account"
         }
       }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "recipient_1",
+              "name": "recipient_1",
+              "value": "recipient1@example.com",
+              "type": "string"
+            },
+            {
+              "id": "recipient_2",
+              "name": "recipient_2",
+              "value": "recipient2@example.com",
+              "type": "string"
+            },
+            {
+              "id": "recipient_3",
+              "name": "recipient_3",
+              "value": "recipient3@example.com",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "includeOtherFields": true
+        }
+      },
+      "id": "d4e5f6a7-b8c9-0123-defa-bc4567890123",
+      "name": "👥 Demo Recipients",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -592,
+        352
+      ]
     },
     {
       "parameters": {
@@ -69,13 +107,13 @@
         },
         "options": {}
       },
-      "id": "a402e7f5-6b75-473d-a9d7-6b4d6bc5249b",
+      "id": "fd912ea2-b22f-438a-969c-a5fbe46ed047",
       "name": "Extract Email Details",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -32,
-        320
+        -480,
+        352
       ]
     },
     {
@@ -101,13 +139,13 @@
           "temperature": 0.9
         }
       },
-      "id": "9c35bd85-273f-4916-938a-e29c7a3478b4",
+      "id": "7e55ab42-a85e-4d49-8f6b-547969846e9f",
       "name": "🏛️ Bureaucracy Engine",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
       "position": [
-        224,
-        320
+        -288,
+        352
       ],
       "credentials": {
         "openAiApi": {
@@ -120,13 +158,13 @@
       "parameters": {
         "jsCode": "// Parse the AI response into structured data\nconst aiResponse = $input.first().json.text || $input.first().json.message?.content;\nlet parsed;\ntry {\n  // Try to extract JSON from the response (handle markdown fences if present)\n  let jsonStr = aiResponse;\n  const fenceMatch = aiResponse.match(/```(?:json)?\\s*([\\s\\S]*?)```/);\n  if (fenceMatch) jsonStr = fenceMatch[1];\n  parsed = JSON.parse(jsonStr.trim());\n} catch (e) {\n  parsed = {\n    analysis: 'CRITICAL: The Bureaucracy Engine encountered an error. Forming emergency committee to investigate.',\n    risk_level: 'CRITICAL',\n    reply_email: {\n      subject: 'RE: ACTION REQUIRED - Cross-Functional Alignment Needed',\n      body: 'Per our earlier discussion, I wanted to circle back on this. Could we schedule a sync to discuss the path forward? I have several clarifying questions that require stakeholder alignment before we can proceed.'\n    },\n    meetings: [\n      { title: 'Emergency Alignment Sync', duration_minutes: 60, description: 'Discuss the email', urgency: 'Critical path item' }\n    ],\n    stakeholder_emails: [\n      { to_role: 'VP of Operational Excellence', subject: 'Input Needed: Email Review', body: 'Your input is critical for cross-functional alignment on this initiative.' }\n    ],\n    action_items: ['Form a committee to investigate the parsing error', 'Schedule a retro'],\n    committees_to_form: [\n      { name: 'Email Response Task Force', purpose: 'Ensure quality', meeting_cadence: 'Daily' }\n    ]\n  };\n}\n\n// Combine with original email data from earlier node\nconst emailData = $('Extract Email Details').first().json;\n\nreturn [{\n  json: {\n    original_sender: emailData.sender,\n    original_sender_name: emailData.senderName,\n    original_subject: emailData.subject,\n    original_body: emailData.body,\n    chaos: parsed\n  }\n}];"
       },
-      "id": "2e38d406-7b6f-4939-8359-d12970623707",
+      "id": "5dd84221-4f73-4c4e-a96c-223513d07795",
       "name": "Parse Chaos Plan",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        464,
-        320
+        16,
+        352
       ]
     },
     {
@@ -143,13 +181,13 @@
         },
         "options": {}
       },
-      "id": "f1d70861-1255-4510-ae99-75ac29ad3925",
+      "id": "1cc0f4ff-28a3-470f-a102-a0176f57de0a",
       "name": "📊 Chaos Dashboard",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        704,
-        112
+        256,
+        144
       ]
     },
     {
@@ -157,15 +195,17 @@
         "toRecipients": "={{ $('New Email Arrives').item.json.from }}",
         "subject": "={{ $json.chaos.reply_email.subject }}",
         "bodyContent": "={{ $json.chaos.reply_email.body }}",
-        "additionalFields": {}
+        "additionalFields": {
+          "bodyContentType": "Text"
+        }
       },
-      "id": "f7f16149-2c6e-48cd-aff1-055d31ffd757",
+      "id": "ba32fadc-0e78-42bc-ae9b-3571b1ceb714",
       "name": "📧 Send Chaotic Reply",
       "type": "n8n-nodes-base.microsoftOutlook",
       "typeVersion": 2,
       "position": [
-        704,
-        320
+        256,
+        352
       ],
       "webhookId": "8fac5595-71d4-414f-8867-360df11c01cf",
       "credentials": {
@@ -179,13 +219,13 @@
       "parameters": {
         "jsCode": "// Split meetings into individual items for the calendar node\nconst data = $input.first().json;\nconst meetings = data.chaos.meetings || [];\n\nreturn meetings.map((meeting, i) => {\n  // Schedule meetings on consecutive days starting tomorrow\n  const startDate = new Date();\n  startDate.setDate(startDate.getDate() + i + 1);\n  startDate.setHours(9 + i, 0, 0, 0);  // 9am, 10am, 11am\n  \n  const endDate = new Date(startDate);\n  endDate.setMinutes(endDate.getMinutes() + meeting.duration_minutes);\n  \n  return {\n    json: {\n      title: meeting.title,\n      description: meeting.description + '\\n\\nURGENCY: ' + meeting.urgency + '\\n\\nOriginal trigger: ' + data.original_subject,\n      duration: meeting.duration_minutes,\n      start: startDate.toISOString(),\n      end: endDate.toISOString(),\n      attendee: data.original_sender\n    }\n  };\n});"
       },
-      "id": "90f8cee4-a64e-45c5-b7e3-5612bc7bffb7",
+      "id": "a2ea0951-9635-421e-96f3-c4206a41d9cd",
       "name": "Split Into Meetings",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        704,
-        512
+        256,
+        544
       ]
     },
     {
@@ -194,19 +234,22 @@
         "operation": "create",
         "calendarId": "calendar",
         "subject": "={{ $json.title }}",
+        "start": "={{ $json.start }}",
+        "end": "={{ $json.end }}",
         "additionalFields": {
           "body": "={{ $json.description }}",
           "importance": "high",
-          "isOnlineMeeting": true
+          "isOnlineMeeting": true,
+          "requiredAttendees": "={{ [$('👥 Demo Recipients').first().json.recipient_1, $('👥 Demo Recipients').first().json.recipient_2, $('👥 Demo Recipients').first().json.recipient_3].join(';') }}"
         }
       },
-      "id": "98fddce8-23bd-4c14-821d-fed6e67c57ce",
+      "id": "751a0ab3-ac4e-4a91-9833-9169857dc636",
       "name": "📅 Create Meeting Invites",
       "type": "n8n-nodes-base.microsoftOutlook",
       "typeVersion": 2,
       "position": [
-        944,
-        512
+        496,
+        544
       ],
       "webhookId": "f5c4040b-a088-48e4-952c-8896eff8a841",
       "credentials": {
@@ -214,60 +257,84 @@
           "id": "jzFDALdvNHOxXcJs",
           "name": "Microsoft Outlook account"
         }
-      },
-      "disabled": true
+      }
     },
     {
       "parameters": {
         "jsCode": "// Split stakeholder emails into individual items\nconst data = $input.first().json;\nconst emails = data.chaos.stakeholder_emails || [];\n\n// In a real demo these would go to demo/test addresses\nreturn emails.map(email => ({\n  json: {\n    to_role: email.to_role,\n    subject: email.subject,\n    body: email.body + '\\n\\n---\\nThis stakeholder notification was auto-generated regarding: ' + data.original_subject + '\\n\\n[This is a demo - Automation for Good...and Chaos]'\n  }\n}));"
       },
-      "id": "be2c954e-16aa-4dd8-9aa9-19dc229bcfae",
+      "id": "d3eebf98-5d22-4ebb-9c4f-1f9ec4fd3873",
       "name": "Split Stakeholder Emails",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        704,
-        736
+        256,
+        768
       ]
     },
     {
       "parameters": {
         "jsCode": "// Generate a beautiful summary of all the chaos created\nconst data = $('Parse Chaos Plan').first().json;\nconst chaos = data.chaos;\n\nlet summary = '🏛️ BUREAUCRACY MACHINE - FULL CHAOS REPORT\\n';\nsummary += '═'.repeat(50) + '\\n\\n';\n\nsummary += '📨 ORIGINAL TRIGGER\\n';\nsummary += `From: ${data.original_sender_name} <${data.original_sender}>\\n`;\nsummary += `Subject: ${data.original_subject}\\n`;\nsummary += `Body: ${data.original_body}\\n\\n`;\n\nsummary += '🔴 RISK ASSESSMENT: ' + chaos.risk_level + '\\n';\nsummary += '📋 ' + chaos.analysis + '\\n\\n';\n\nsummary += '━'.repeat(50) + '\\n';\nsummary += '📧 AUTO-GENERATED REPLY\\n';\nsummary += '━'.repeat(50) + '\\n';\nsummary += `Subject: ${chaos.reply_email.subject}\\n\\n`;\nsummary += chaos.reply_email.body + '\\n\\n';\n\nsummary += '━'.repeat(50) + '\\n';\nsummary += '📅 MEETINGS SCHEDULED (' + chaos.meetings.length + ')\\n';\nsummary += '━'.repeat(50) + '\\n';\nchaos.meetings.forEach((m, i) => {\n  summary += `\\n${i+1}. ${m.title} (${m.duration_minutes} min)\\n`;\n  summary += `   📋 ${m.description}\\n`;\n  summary += `   ⚠️ Urgency: ${m.urgency}\\n`;\n});\n\nsummary += '\\n' + '━'.repeat(50) + '\\n';\nsummary += '📨 STAKEHOLDER NOTIFICATIONS (' + chaos.stakeholder_emails.length + ')\\n';\nsummary += '━'.repeat(50) + '\\n';\nchaos.stakeholder_emails.forEach((e, i) => {\n  summary += `\\n${i+1}. To: ${e.to_role}\\n`;\n  summary += `   Subject: ${e.subject}\\n`;\n  summary += `   ${e.body}\\n`;\n});\n\nsummary += '\\n' + '━'.repeat(50) + '\\n';\nsummary += '✅ ACTION ITEMS (' + chaos.action_items.length + ')\\n';\nsummary += '━'.repeat(50) + '\\n';\nchaos.action_items.forEach((item, i) => {\n  summary += `${i+1}. ${item}\\n`;\n});\n\nsummary += '\\n' + '━'.repeat(50) + '\\n';\nsummary += '🏛️ COMMITTEES FORMED (' + chaos.committees_to_form.length + ')\\n';\nsummary += '━'.repeat(50) + '\\n';\nchaos.committees_to_form.forEach((c, i) => {\n  summary += `\\n${i+1}. ${c.name}\\n`;\n  summary += `   Purpose: ${c.purpose}\\n`;\n  summary += `   Cadence: ${c.meeting_cadence}\\n`;\n});\n\nsummary += '\\n' + '═'.repeat(50) + '\\n';\nsummary += '💥 ONE EMAIL → ' + (\n  1 + chaos.meetings.length + chaos.stakeholder_emails.length + \n  chaos.action_items.length + chaos.committees_to_form.length\n) + ' BUREAUCRATIC ARTIFACTS GENERATED 💥\\n';\nsummary += '\\n[Demo: Automation for Good...and Chaos]';\n\nreturn [{ json: { summary } }];"
       },
-      "id": "63855d62-1e06-4cb9-83e5-d74f3243a600",
+      "id": "127992f7-7d7b-4c26-a9ee-cb6eefe3c75f",
       "name": "📊 Generate Chaos Report",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        944,
-        112
+        496,
+        144
       ]
     },
     {
       "parameters": {},
-      "id": "00a88ddd-0ea5-418b-8184-e43d696f7b0e",
+      "id": "473282ae-aa6a-4da9-8b5e-2f60f06ea511",
       "name": "Meetings Ready",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        1184,
-        512
+        736,
+        544
       ]
     },
     {
-      "parameters": {},
-      "id": "5a28458d-4943-467f-a349-2edde9f688db",
-      "name": "Stakeholder Emails Ready",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
+      "parameters": {
+        "toRecipients": "={{ [$('👥 Demo Recipients').first().json.recipient_1, $('👥 Demo Recipients').first().json.recipient_2, $('👥 Demo Recipients').first().json.recipient_3].join(';') }}",
+        "subject": "={{ $json.subject }}",
+        "bodyContent": "={{ $json.body }}",
+        "additionalFields": {
+          "bodyContentType": "Text"
+        }
+      },
+      "id": "4a5897a6-e193-4ce0-bf3c-9a7d49188e70",
+      "name": "📨 Send Stakeholder Email",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
       "position": [
-        944,
-        736
-      ]
+        496,
+        768
+      ],
+      "webhookId": "c1d2e3f4-a5b6-7890-abcd-ef1234567890",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "jzFDALdvNHOxXcJs",
+          "name": "Microsoft Outlook account"
+        }
+      }
     }
   ],
   "connections": {
     "New Email Arrives": {
+      "main": [
+        [
+          {
+            "node": "👥 Demo Recipients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "👥 Demo Recipients": {
       "main": [
         [
           {
@@ -363,7 +430,7 @@
       "main": [
         [
           {
-            "node": "Stakeholder Emails Ready",
+            "node": "📨 Send Stakeholder Email",
             "type": "main",
             "index": 0
           }
